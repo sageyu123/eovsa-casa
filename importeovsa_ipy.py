@@ -209,7 +209,7 @@ def idb2ms(filelist,outpath=None,ms_std=None,nowritems=False):
             flag[k,:,l/(npairs*npol),bl2ord[i0,j0]] = data.mask
             if i!=j:
                 if k == 3: 
-                    uvwarray[:,l/(npairs*npol),bl2ord[i0,j0]] = uvw*constants.speed_of_light/1e9
+                    uvwarray[:,l/(npairs*npol),bl2ord[i0,j0]] = -uvw*constants.speed_of_light/1e9
 
         nrows = time_steps*npairs
         out=out.reshape(npol,nf,nrows)
@@ -312,6 +312,9 @@ def idb2ms(filelist,outpath=None,ms_std=None,nowritems=False):
             pol_id=tabl.getcol('POLARIZATION_ID')
             pol_id*=0
             tabl.putcol('POLARIZATION_ID',pol_id)
+            spw_id=tabl.getcol('SPECTRAL_WINDOW_ID')
+            spw_id*=0
+            tabl.putcol('SPECTRAL_WINDOW_ID',spw_id)            
             tabl.close()
 
             if not nocreatms:
