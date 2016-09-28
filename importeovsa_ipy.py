@@ -4,63 +4,17 @@
 import os
 import sys
 import gc
-# from util import Time
 import jdutil
 import numpy as np
 import matplotlib.pyplot as plt
-# from astropy.constants import R_earth
 import scipy.constants as constants
 import time
 import glob
-# import dump_tsys_ext
 import casacore.tables.table as tb
 import aipy
-
-
-
-
-def issourcesun(filelist):
-    ''' Returns a list of filenames that the source ID is sun out of the input filelist
-        Example
-        -----------
-        folder = '/data1/eovsa/fits/IDB/20160531/'
-        filelist = sorted(glob.glob(folder+'/IDB*'))
-        listsun = issourcesun(filelist)
- 
-        for filename in filelist:
-            uv = aipy.miriad.UV(filename)
-            if uv['source'].lower() != 'sun':
-                print filename,uv['source']
-
-        for filename in filelist:
-            uv = aipy.miriad.UV(filename)
-            if uv['source'].lower() == '1229+020':
-                print filename,uv['source']       
-
-        cat filelist.txt | xargs -J {} echo scp -r tawa:\" {} \" /Volumes/NAOC-001/work/2016/EOVSA/data
-        cat filelist.txt | xargs -J {} scp -r tawa:\" {} \" /Volumes/NAOC-001/work/2016/EOVSA/data
-    '''
-    import aipy
-
-    outlist = ['']
-    for filename in filelist:     
-        uv = aipy.miriad.UV(filename)
-        if uv['source'].lower() == 'sun':
-            outlist.append(filename)
-    return outlist[1:] 
-
-def flist2scp(filelist):
-    ''' Returns the command input for scp
-        Example
-        -----------
-        folder = '/data1/eovsa/fits/IDB/20160531/'
-        filelist = glob.glob(folder+'/IDB*')
-        listsun = issourcesun(filelist)
-        cmd = flist2scp(listsun)
-    '''
-    cmd='scp -r tawa:"'+' '.join(filelist)[1:]+'" /Volumes/NAOC-001/work/2016/EOVSA/data'
-    return cmd
-
+import chan_util_bc as cu
+import read_idb as ri
+from util import Time
 
 def bl_list2(nant=16):
     ''' Returns a two-dimensional array bl2ord that will translate
@@ -77,86 +31,46 @@ def bl_list2(nant=16):
             k+=1
     return bl2ord
 
-def ant_list(nant=16):
-    ''' Returns order of antenna pair corresponding to the bl2ord
+def get_band_edge(nband=34):
+    # Input the frequencies from UV, returen the indices frequency edges of all bands    
+    idx_start_freq = [0]
+    ntmp=0
+    for i in range(1,nband+1):
+        ntmp+=len(cu.start_freq(i))
+        idx_start_freq.append(ntmp)
+    return np.asarray(idx_start_freq)
+
+def idb2ms(trange, modelms=None, outpath=None, nocreatms=True, nowritems=False):
+    ''' This is the main routine to convert the EOVSA IDB files to CASA measurement set.
+        Parameters
+        ----------
+        trange:  Finding the IDB files within the given time range. If trange is not a Time() object,
+        assume that it is the list of files to read.    
     '''
-    nbl=(nant-1)*nant/2
-    npairs = nbl+nant
-    ant2ord = np.ones((npairs,2),dtype='int')
-    k = 0
-    for i in range(nant):
-        for j in range(i,nant):
-            ant2ord[k,:] = [i,j]
-            k+=1
-    return ant2ord    
-
-def get_band_edge(freq=None):
-    # Input the frequencies from UV, returen the indices frequency edges of all bands
-    data = freq - np.roll(freq,1)
-    data1 = data - np.roll(data,1)
-    data2 = data - np.roll(data,-1)
-    data1[np.logical_or(data1 > 0.01,data1 <-17)] = 1
-    data1[data1 < 0.01] = 0
-    data2[np.logical_or(data2 > 0.01,data2 <-17)] = 1
-    data2[data2 < 0.01] = 0
-    return (np.where(np.logical_and(data1==1,data2==1)))[0]
 
 
 
+    if type(trange) == Time:
+        filelist = ri.get_trange_files(trange)
+    else:
+        # If input type is not Time, assume that it is the list of files to read
+        filelist = trange
 
-def idb2ms(filelist,outpath=None,ms_std=None,nowritems=False):
-
-''' This is the main routine to convert the EOVSA IDB files to CASA measurement set.
-    Parameters
-    ----------
-    filelist: list of input IDB files ['IDB1','IDB2',...]
-    outpath: output path
-    ms_std: a standard CASA measurement set as a template
-
-    Example
-    ----------
-    import importeovsa_ipy
-    filelist=['/data1/eovsa/fits/IDB/20160524/IDB20160524000518','/data1/eovsa/fits/IDB/20160524/IDB20160524004752']
-    ms_std = '/home/user/sjyu/20160531/ms/sun/SUN/SUN_20160531T142234-10m.1s.ms'
-    outpath='/home/user/sjyu/20160531/ms/'
-    importeovsa_ipy.idb2ms(filelist,outpath=yourpath,ms_std=your_standard_ms)
-'''
-    # filelist=glob.glob('/Volumes/MyPassport/EOVSA/20160531/data/sun/IDB20160531003520')
-    # filelist=[filelist[31]]
-    # filelist=filelist[31:34]
-    # filelist=['/data1/eovsa/fits/IDB/20160531/IDB20160531144234']
-
-    nocreatms = True
-    nowritems = False
+    if not modelms:
+        modelms='/home/user/sjyu/20160531/ms/sun/SUN/SUN_20160531T142234-10m.1s.ms'
+    try:
+        for f in filelist:
+            os.path.exists(f)
+    except ValueError:
+        print("Some files in filelist are invalid. Aborting...")
+    if not outpath:
+        # use current directory
+        outpath='./'
 
 
-    if len(filelist) == 0:
-        print 'eovsa_idb2ms: No files input'
-        return None
-
-    # Be sure that files exist, and has all of the appropriate elements
-    filelist_test, ok_filelist, bad_filelist = valid_miriad_dataset(filelist)
-    if len(ok_filelist) == 0:
-        print 'eovsa_idb2ms: No valid files input'
-        return None
-
-    if ms_std:
-        ms_std = '/home/user/sjyu/20160531/ms/sun/SUN/SUN_20160531T142234-10m.1s.ms'
-
-    if outpath:
-        outpath='/home/user/sjyu/20160531/ms/'        
 
     for filename in filelist:     
         uv = aipy.miriad.UV(filename)
-        if uv['source'].lower() == 'sun':
-            outpath=outpath+'sun/'
-            if not os.path.exists(outpath):
-                os.mkdir(outpath)            
-        else:
-            outpath=outpath+'calibrator/' 
-            if not os.path.exists(outpath):
-                os.mkdir(outpath)               
-        uv.rewind()
 
         start_time = 0 # The start and stop times are referenced to ref_time_jd in second
         end_time=600
@@ -209,7 +123,7 @@ def idb2ms(filelist,outpath=None,ms_std=None,nowritems=False):
             flag[k,:,l/(npairs*npol),bl2ord[i0,j0]] = data.mask
             if i!=j:
                 if k == 3: 
-                    uvwarray[:,l/(npairs*npol),bl2ord[i0,j0]] = -uvw*constants.speed_of_light/1e9
+                    uvwarray[:,l/(npairs*npol),bl2ord[i0,j0]] = uvw*constants.speed_of_light/1e9
 
         nrows = time_steps*npairs
         out=out.reshape(npol,nf,nrows)
@@ -222,21 +136,14 @@ def idb2ms(filelist,outpath=None,ms_std=None,nowritems=False):
         print 'IDB File {0} is readed in --- {1:10.2f} seconds ---'.format(filename,(time.time() - time0))
 
 
-        # nocreatms=True
-        # nowritems=True
-        # nocreatms=False
-        # nowritems=False
-        msname = list(filename.split('/')[-1])
-        msname.insert(11,'T')
-        msname = outpath+source_id.upper()+'_'+''.join(msname[3:])+'-10m.1s.ms'
-
+        msname=outpath+filename.split('/')[-1]+'.ms'
 
 
         if not nocreatms:
             print 'Empty MS {0} created in --- {1:10.2f} seconds ---'.format(msname,(time.time() - time0))
         else:
             os.system("rm -fr %s"%msname)
-            os.system("cp -r "+" %s"%ms_std+" %s"%msname)     
+            os.system("cp -r "+" %s"%modelms+" %s"%msname)     
             print 'Standard MS is copied to {0} in --- {1:10.2f} seconds ---'.format(msname,(time.time() - time0))        
 
 
@@ -312,9 +219,6 @@ def idb2ms(filelist,outpath=None,ms_std=None,nowritems=False):
             pol_id=tabl.getcol('POLARIZATION_ID')
             pol_id*=0
             tabl.putcol('POLARIZATION_ID',pol_id)
-            spw_id=tabl.getcol('SPECTRAL_WINDOW_ID')
-            spw_id*=0
-            tabl.putcol('SPECTRAL_WINDOW_ID',spw_id)            
             tabl.close()
 
             if not nocreatms:
@@ -354,4 +258,4 @@ def idb2ms(filelist,outpath=None,ms_std=None,nowritems=False):
         print 'finished in --- {0:10.2f} seconds ---'.format(time.time() - time0)      
 
 
-        
+            
