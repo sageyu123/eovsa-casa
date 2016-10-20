@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" ?>
+<casaxml xmlns="http://casa.nrao.edu/schema/psetTypes.html"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://casa.nrao.edu/schema/casa.xsd
+file:///opt/casa/code/xmlcasa/xml/casa.xsd">
+
+    <task type="function" name="importeovsa" category="Import/export">
+        <shortdescription>Import EOVSA idb file(s) to a measurement set or multiple measurement set</shortdescription>
+
+        <description>
+        </description>
+
+        <input>
+            <param type="string" name="vis" mustexist="true">
+                <description>Name of input EOVSA idb data, Multi-idb or time range.</description>
+                <value></value>
+            </param>
+
+
+            <!-- SELECTION parameters -->
+            <param type="bool" name="nocreatms">
+                <description>If copying a new MS file instead of create one from MS simulator.</description>
+                <value>False</value>
+            </param>
+            <param type="string" name="modelms" subparam="true">
+                <description>Name of the standard Measurement Set.</description>
+                <any type="variant" limittypes="string stringArray"/>
+                <value type="string"></value>
+            </param>
+
+            <param type="bool" name="doconcat">
+                <description>If outputing one single MS file or Multi-MS files.</description>
+                <value>False</value>
+            </param>
+
+            <param type="bool" name="doavg">
+                <description>If do the average over time or frequency.</description>
+                <value>False</value>
+            </param>
+
+            <!-- CHANNEL AVERAGING parameters -->
+            <param type="any" name="width" subparam="true">
+                <description>Number of channels to average to form one output channel</description>
+                <any type="variant" limittypes="string stringArray int intArray"/>
+                <value type="int">1</value>
+            </param>
+
+            <!-- TIME AVERAGING parameters -->
+            <param type="string" name="timebin" subparam="true">
+                <description>Bin width for time averaging</description>
+                <value type="string">0s</value>
+            </param>
+
+            <!-- CONSTRAINTS -->
+            <constraints>
+                <when param="doavg">
+                    <notequals type="bool" value=True>
+                        <default param="nocreatms">
+                            <value type="bool">False</value>
+                        </default>
+                    </notequals>
+                </when>
+            </constraints>
+        </input>
+        <example>
+
+
+            Detailed Keyword arguments:
+
+            vis -- Name of input EOVSA idb data, Multi-idb or time range.
+            default: none;
+            example: vis='IDB20160524000518' or vis=['2016-08-09 12:10:00','2016-08-09 12:50:00']
+
+            outputvis -- Name of output Measurement set or Multi-MS (MMS).
+            default: none;
+            example: outputvis='ngc5921_src.ms'
+
+
+            --- Data Selection ---
+
+            nocreatms -- If copying a new MS file instead of create one from MS simulator.
+            default: False
+
+            modelms -- Name of the standard Measurement Set. IF modelms is not provided, use
+            '/home/user/sjyu/20160531/ms/sun/SUN/SUN_20160531T142234-10m.1s.ms' as a standard MS.
+
+            doconcat -- If outputing one single MS file
+
+            --- Channel averaging parameter ---
+
+            doavg -- If do the average over time or frequency.
+
+            width -- Number of input channels to average to create an output
+            channel. If a list is given, each bin will apply to one spw in
+            the selection.
+            default: 1 =&gt; no channel averaging.
+            options: (int) or [int]
+
+            example: chanbin=[2,3] =&gt; average 2 channels of 1st selected
+            spectral window and 3 in the second one.
+
+
+            --- Time averaging parameters ---
+
+            timebin -- Bin width for time averaging. When timebin is greater than 0s,
+            the task will average data in time. Flagged data will be included
+            in the average calculation, unless the parameter keepflags is set to False.
+            In this case only partially flagged rows will be used in the average.
+            default: '0s'
+
+
+
+        </example>
+    </task>
+</casaxml>

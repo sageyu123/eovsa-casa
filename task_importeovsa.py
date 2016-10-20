@@ -1,5 +1,3 @@
-''' a CASA script to create a CASA measurement set from a EOVSA IDB file.
-'''
 import os
 import sys
 import gc
@@ -32,7 +30,7 @@ def bl_list2(nant=16):
 
 
 def get_band_edge(nband=34):
-    # Input the frequencies from UV, returen the indices frequency edges of all bands    
+    # Input the frequencies from UV, returen the indices frequency edges of all bands
     idx_start_freq = [0]
     ntmp = 0
     for i in range(1, nband + 1):
@@ -42,15 +40,15 @@ def get_band_edge(nband=34):
 
 
 def idb2ms(vis,
-           modelms,
+           doavg,
            timebin,
            width,
            outpath,
            nocreatms,
-           nowritems,
-           doavg,
+           modelms,
            doconcat):
 
+    nowritems = False
     if type(vis) == Time:
         filelist = ri.get_trange_files(vis)
     else:
@@ -351,4 +349,7 @@ def idb2ms(vis,
             gc.collect()  #
 
         print("finished in --- %s seconds ---" % (time.time() - time0))
-        return
+        return True
+
+
+
