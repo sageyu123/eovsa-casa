@@ -34,30 +34,31 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
                 <value>False</value>
             </param>
 
-            <param type="bool" name="doavg">
-                <description>If do the average over time or frequency.</description>
-                <value>False</value>
-            </param>
 
             <!-- CHANNEL AVERAGING parameters -->
-            <param type="any" name="width" subparam="true">
+            <param type="any" name="width">
                 <description>Number of channels to average to form one output channel</description>
                 <any type="variant" limittypes="string stringArray int intArray"/>
                 <value type="int">1</value>
             </param>
 
             <!-- TIME AVERAGING parameters -->
-            <param type="string" name="timebin" subparam="true">
+            <param type="string" name="timebin">
                 <description>Bin width for time averaging</description>
                 <value type="string">0s</value>
+            </param>
+            <param type="any" name="combine" subparam="true">
+                <description>Span the timebin across scan, state or both</description>
+                <any type="variant" limittypes="string stringArray"/>
+                <value type="string"></value>
             </param>
 
             <!-- CONSTRAINTS -->
             <constraints>
-                <when param="doavg">
-                    <notequals type="bool" value=True>
-                        <default param="nocreatms">
-                            <value type="bool">False</value>
+                <when param="timebin">
+                    <notequals type="string" value="0s">
+                        <default param="combine">
+                            <value type="string"></value>
                         </default>
                     </notequals>
                 </when>
@@ -87,9 +88,8 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
             doconcat -- If outputing one single MS file
 
-            --- Channel averaging parameter ---
 
-            doavg -- If do the average over time or frequency.
+            --- Channel averaging parameter ---
 
             width -- Number of input channels to average to create an output
             channel. If a list is given, each bin will apply to one spw in
@@ -109,6 +109,12 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
             In this case only partially flagged rows will be used in the average.
             default: '0s'
 
+            combine -- Let the timebin span across scan, state or both.
+            State is equivalent to sub-scans. One scan may have several
+            state ids. For ALMA MSs, the sub-scans are limited to about
+            30s duration each. In these cases, the task will automatically
+            add state to the combine parameter. To see the number of states
+            in an MS, use the msmd tool. See help msmd.
 
 
         </example>

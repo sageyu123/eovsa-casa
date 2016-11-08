@@ -39,7 +39,7 @@ def get_band_edge(nband=34):
     return np.asarray(idx_start_freq)
 
 
-def idb2ms(vis,
+def importeovsa(vis,
            doavg,
            timebin,
            width,
