@@ -203,6 +203,7 @@ def importeovsa(vis, timebin, width, outpath, nocreatms, doconcat):
             filename = filelist[0]
         modelms = creatms(filename, outpath, timebin=timebin, width=width)
 
+
     for filename in filelist:
         uv = aipy.miriad.UV(filename)
         if uv['source'].lower() == 'sun':
@@ -404,4 +405,5 @@ def importeovsa(vis, timebin, width, outpath, nocreatms, doconcat):
         gc.collect()  #
 
         print("finished in --- %s seconds ---" % (time.time() - time0))
+
         return True

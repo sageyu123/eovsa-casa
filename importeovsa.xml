@@ -12,7 +12,7 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
         </description>
 
         <input>
-            <param type="string" name="vis" mustexist="true">
+            <param type="any" name="vis" mustexist="true">
                 <description>Name of input EOVSA idb data, Multi-idb or time range.</description>
                 <any type="variant" limittypes="string stringArray"/>
                 <value type="string"></value>
