@@ -14,7 +14,8 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
         <input>
             <param type="string" name="vis" mustexist="true">
                 <description>Name of input EOVSA idb data, Multi-idb or time range.</description>
-                <value></value>
+                <any type="variant" limittypes="string stringArray"/>
+                <value type="string"></value>
             </param>
 
 
@@ -23,6 +24,7 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
                 <description>If copying a new MS file instead of create one from MS simulator.</description>
                 <value>False</value>
             </param>
+
             <param type="string" name="modelms" subparam="true">
                 <description>Name of the standard Measurement Set.</description>
                 <any type="variant" limittypes="string stringArray"/>
@@ -37,7 +39,7 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
             <!-- CHANNEL AVERAGING parameters -->
             <param type="any" name="width">
-                <description>Number of channels to average to form one output channel</description>
+                <description>Width of output channel relative to MS channel (# to average)</description>
                 <any type="variant" limittypes="string stringArray int intArray"/>
                 <value type="int">1</value>
             </param>
@@ -54,15 +56,15 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
             </param>
 
             <!-- CONSTRAINTS -->
-            <constraints>
-                <when param="timebin">
-                    <notequals type="string" value="0s">
-                        <default param="combine">
-                            <value type="string"></value>
-                        </default>
-                    </notequals>
-                </when>
-            </constraints>
+            <!--<constraints>-->
+                <!--<when param="timebin">-->
+                    <!--<notequals type="string" value="0s">-->
+                        <!--<default param="combine">-->
+                            <!--<value type="string"></value>-->
+                        <!--</default>-->
+                    <!--</notequals>-->
+                <!--</when>-->
+            <!--</constraints>-->
         </input>
         <example>
 
