@@ -68,13 +68,14 @@ def creatms(idbfile,outpath,timebin=None,width=None):
     sdf = uv['sdf']
     project = uv['proj']
     source_id = uv['source']
-    bandedge = get_band_edge(freq)
+    bandedge = get_band_edge(nband=34)
     msname = list(idbfile.split('/')[-1])
     msname.insert(11, 'T')
     msname = outpath + source_id.upper() + '_' + ''.join(msname[3:]) + '-10m.ms'
 
     if os.path.exists(msname):
         os.system("rm -fr %s" % msname)
+
     """ Creates an empty measurement set using CASA simulate (sm) tool. """
     sm.open(msname)
 
@@ -102,7 +103,7 @@ def creatms(idbfile,outpath,timebin=None,width=None):
     # ])
     # xyz = xyz0[np.newaxis,:] + enu.dot(xform)
 
-    dishdiam = np.full(uv['nants'], 2.1)
+    dishdiam = np.asarray([2.1]*uv['nants'])
     dishdiam[-3:-1] = 27
     dishdiam[-1] = 2.1
     station = uv['telescop']
@@ -181,8 +182,9 @@ def importeovsa(vis, timebin, width, outpath, nocreatms, doconcat):
             os.path.exists(f)
     except ValueError:
         print("Some files in filelist are invalid. Aborting...")
-    if not outpath:
-        # use current directory
+    try:
+        print outpath
+    except:
         outpath = './'
     try:
         print 'timebin = {}'.format(timebin)
@@ -195,7 +197,10 @@ def importeovsa(vis, timebin, width, outpath, nocreatms, doconcat):
         width = 1
 
     if nocreatms:
-        filename = filelist[0]
+        if type(filelist)==str:
+            filename = filelist
+        else:
+            filename = filelist[0]
         modelms = creatms(filename, outpath, timebin=timebin, width=width)
 
     for filename in filelist:
@@ -241,7 +246,7 @@ def importeovsa(vis, timebin, width, outpath, nocreatms, doconcat):
         flag = np.ones((npol, nf, time_steps, npairs), dtype=bool)
         out = np.zeros((npol, nf, time_steps, npairs), dtype=np.complex64)  # Cross-correlations
         uvwarray = np.zeros((3, time_steps, npairs), dtype=np.float)
-        bandedge = get_band_edge(freq)
+        bandedge = get_band_edge(nband=34)
         nband = len(bandedge) - 1
 
         uv.rewind()
