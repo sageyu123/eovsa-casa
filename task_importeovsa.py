@@ -11,7 +11,8 @@ import aipy
 import eovsapy.chan_util_bc as cu
 import eovsapy.read_idb as ri
 from eovsapy.util import Time
-
+from taskinit import *
+from parallel.parallel_data_helper import ParallelDataHelper
 
 def bl_list2(nant=16):
     ''' Returns a two-dimensional array bl2ord that will translate
@@ -171,17 +172,34 @@ def creatms(idbfile,outpath,timebin=None,width=None):
 
 
 def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=False, doconcat=False):
+
+    casalog.origin('importeovsa')
+
+    # # Initialize the helper class
+    # pdh = ParallelDataHelper("importeovsa", locals())
+    #
+    # # Validate input and output parameters
+    # try:
+    #     pdh.setupIO()
+    # except Exception, instance:
+    #     casalog.post('%s' % instance, 'ERROR')
+    #     return False
+
+
     if type(vis) == Time:
         filelist = ri.get_trange_files(vis)
     else:
         # If input type is not Time, assume that it is the list of files to read
         filelist = vis
 
-    try:
-        for f in filelist:
-            os.path.exists(f)
-    except ValueError:
-        print("Some files in filelist are invalid. Aborting...")
+    if type(filelist) == str:
+        filelist = [filelist]
+
+
+    for f in filelist:
+        if not os.path.exists(f):
+            casalog.post("Some files in filelist are invalid. Aborting...")
+            return False
     if not outpath:
         outpath = './'
     if not timebin:
@@ -189,13 +207,9 @@ def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=False, do
     if not width:
         width=1
 
-
-    if type(filelist) == str:
-        filelist = [filelist]
     if nocreatms:
         filename = filelist[0]
         modelms = creatms(filename, outpath, timebin=timebin, width=width)
-
 
     for filename in filelist:
         uv = aipy.miriad.UV(filename)
