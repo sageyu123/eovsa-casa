@@ -1,7 +1,7 @@
 import os
 import sys
 import gc
-import suncasa.utils.jdutil
+import suncasa.utils.jdutil as jdutil
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.constants as constants
@@ -170,7 +170,7 @@ def creatms(idbfile,outpath,timebin=None,width=None):
     return modelms
 
 
-def importeovsa(vis, timebin, width, outpath, nocreatms, doconcat):
+def importeovsa(vis, timebin, width, outpath, nocreatms=False, doconcat=False):
     if type(vis) == Time:
         filelist = ri.get_trange_files(vis)
     else:
@@ -195,12 +195,10 @@ def importeovsa(vis, timebin, width, outpath, nocreatms, doconcat):
         print 'width = {}'.format(width)
     except:
         width = 1
-
+    if type(filelist) == str:
+        filelist = [filelist]
     if nocreatms:
-        if type(filelist)==str:
-            filename = filelist
-        else:
-            filename = filelist[0]
+        filename = filelist[0]
         modelms = creatms(filename, outpath, timebin=timebin, width=width)
 
 
