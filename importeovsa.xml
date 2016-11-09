@@ -55,16 +55,16 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
                 <value type="string"></value>
             </param>
 
-            <!-- CONSTRAINTS -->
-            <!--<constraints>-->
-                <!--<when param="timebin">-->
-                    <!--<notequals type="string" value="0s">-->
-                        <!--<default param="combine">-->
-                            <!--<value type="string"></value>-->
-                        <!--</default>-->
-                    <!--</notequals>-->
-                <!--</when>-->
-            <!--</constraints>-->
+             CONSTRAINTS
+            <constraints>
+                <when param="timebin">
+                    <notequals type="string" value="0s">
+                        <default param="combine">
+                            <value type="string"></value>
+                        </default>
+                    </notequals>
+                </when>
+            </constraints>
         </input>
         <example>
 
