@@ -25,9 +25,9 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
                 <value>False</value>
             </param>
 
-            <param type="string" name="modelms" subparam="true">
-                <description>Name of the standard Measurement Set.</description>
-                <any type="variant" limittypes="string stringArray"/>
+            <param type="string" name="outpath">
+                <description>path of output file.</description>
+                <any type="variant" limittypes="string"/>
                 <value type="string"></value>
             </param>
 
@@ -49,21 +49,21 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
                 <description>Bin width for time averaging</description>
                 <value type="string">0s</value>
             </param>
-            <param type="any" name="combine" subparam="true">
-                <description>Span the timebin across scan, state or both</description>
-                <any type="variant" limittypes="string stringArray"/>
-                <value type="string"></value>
-            </param>
+            <!--<param type="any" name="combine" subparam="true">-->
+                <!--<description>Span the timebin across scan, state or both</description>-->
+                <!--<any type="variant" limittypes="string stringArray"/>-->
+                <!--<value type="string"></value>-->
+            <!--</param>-->
 
              CONSTRAINTS
             <constraints>
-                <when param="timebin">
-                    <notequals type="string" value="0s">
-                        <default param="combine">
-                            <value type="string"></value>
-                        </default>
-                    </notequals>
-                </when>
+                <!--<when param="timebin">-->
+                    <!--<notequals type="string" value="0s">-->
+                        <!--<default param="combine">-->
+                            <!--<value type="string"></value>-->
+                        <!--</default>-->
+                    <!--</notequals>-->
+                <!--</when>-->
             </constraints>
         </input>
         <example>

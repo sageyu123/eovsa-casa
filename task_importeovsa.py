@@ -170,7 +170,7 @@ def creatms(idbfile,outpath,timebin=None,width=None):
     return modelms
 
 
-def importeovsa(vis, timebin, width, outpath, nocreatms=False, doconcat=False):
+def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=False, doconcat=False):
     if type(vis) == Time:
         filelist = ri.get_trange_files(vis)
     else:
@@ -182,19 +182,14 @@ def importeovsa(vis, timebin, width, outpath, nocreatms=False, doconcat=False):
             os.path.exists(f)
     except ValueError:
         print("Some files in filelist are invalid. Aborting...")
-    try:
-        print outpath
-    except:
+    if not outpath:
         outpath = './'
-    try:
-        print 'timebin = {}'.format(timebin)
-    except:
-        timebin = '0s'
+    if not timebin:
+        timebin='0s'
+    if not width:
+        width=1
 
-    try:
-        print 'width = {}'.format(width)
-    except:
-        width = 1
+
     if type(filelist) == str:
         filelist = [filelist]
     if nocreatms:
@@ -405,3 +400,6 @@ def importeovsa(vis, timebin, width, outpath, nocreatms=False, doconcat=False):
         print("finished in --- %s seconds ---" % (time.time() - time0))
 
         return True
+
+# vis='../eovsa/data/IDB20160531170234'
+# importeovsa(vis, nocreatms=False, doconcat=False)
