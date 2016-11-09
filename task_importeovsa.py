@@ -1,16 +1,16 @@
 import os
 import sys
 import gc
-import jdutil
+import suncasa.utils.jdutil
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.constants as constants
 import time
 import glob
 import aipy
-import chan_util_bc as cu
-import read_idb as ri
-from util import Time
+import eovsapy.chan_util_bc as cu
+import eovsapy.read_idb as ri
+from eovsapy.util import Time
 
 
 def bl_list2(nant=16):
