@@ -163,7 +163,7 @@ def creatms(idbfile,outpath,timebin=None,width=None):
     return modelms
 
 
-def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=True):
+def importeovsa(idbfiles, timebin=None, width=None, visprefix=None, nocreatms=True, doconcat=False):
 
     casalog.origin('importeovsa')
 
@@ -178,11 +178,11 @@ def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=True):
     #     return False
 
 
-    if type(vis) == Time:
-        filelist = ri.get_trange_files(vis)
+    if type(idbfiles) == Time:
+        filelist = ri.get_trange_files(idbfiles)
     else:
         # If input type is not Time, assume that it is the list of files to read
-        filelist = vis
+        filelist = idbfiles
 
     if type(filelist) == str:
         filelist = [filelist]
@@ -192,8 +192,8 @@ def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=True):
         if not os.path.exists(f):
             casalog.post("Some files in filelist are invalid. Aborting...")
             return False
-    if not outpath:
-        outpath = './'
+    if not visprefix:
+        visprefix = './'
     if not timebin:
         timebin='0s'
     if not width:
@@ -201,18 +201,18 @@ def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=True):
 
     if nocreatms:
         filename = filelist[0]
-        modelms = creatms(filename, outpath)
+        modelms = creatms(filename, visprefix)
 
     for filename in filelist:
         uv = aipy.miriad.UV(filename)
         if uv['source'].lower() == 'sun':
-            outpath = outpath + 'sun/'
-            if not os.path.exists(outpath):
-                os.mkdir(outpath)
+            visprefix = visprefix + 'sun/'
+            if not os.path.exists(visprefix):
+                os.mkdir(visprefix)
         else:
-            outpath = outpath + 'calibrator/'
-            if not os.path.exists(outpath):
-                os.mkdir(outpath)
+            visprefix = visprefix + 'calibrator/'
+            if not os.path.exists(visprefix):
+                os.mkdir(visprefix)
         uv.rewind()
 
         start_time = 0  # The start and stop times are referenced to ref_time_jd in second
@@ -232,14 +232,10 @@ def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=True):
         ref_time_jd = uv['time']
         ref_time_mjd = (ref_time_jd - 2400000.5) * 24. * 3600. + 0.5 * delta_time
         nf = len(good_idx)
-        freq = uv['sfreq'][good_idx]
         npol = uv['npol']
         nants = uv['nants']
-        sdf = uv['sdf']
-        project = uv['proj']
         source_id = uv['source']
         ra, dec = uv['ra'], uv['dec']
-        scan_id = uv['scanid']
         nbl = nants * (nants - 1) / 2
         bl2ord = bl_list2(nants)
         npairs = nbl + nants
@@ -280,10 +276,10 @@ def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=True):
 
         msname = list(filename.split('/')[-1])
         msname.insert(11, 'T')
-        msname = outpath + source_id.upper() + '_' + ''.join(msname[3:]) + '-10m.ms'
+        msname = visprefix + source_id.upper() + '_' + ''.join(msname[3:]) + '-10m.ms'
 
         if not nocreatms:
-            modelms = creatms(filename, outpath)
+            modelms = creatms(filename, visprefix)
             os.system('mv {} {}'.format(modelms,msname))
         else:
             print '----------------------------------------'
