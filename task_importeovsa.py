@@ -12,6 +12,9 @@ import eovsapy.read_idb as ri
 from eovsapy.util import Time
 from taskinit import *
 from split_cli import split_cli as split
+from concat_cli import concat_cli as concat
+
+
 # from parallel.parallel_data_helper import ParallelDataHelper
 
 def bl_list2(nant=16):
@@ -40,7 +43,7 @@ def get_band_edge(nband=34):
     return np.asarray(idx_start_freq)
 
 
-def creatms(idbfile,outpath,timebin=None,width=None):
+def creatms(idbfile, outpath, timebin=None, width=None):
     uv = aipy.miriad.UV(idbfile)
     uv.rewind()
 
@@ -96,7 +99,7 @@ def creatms(idbfile,outpath,timebin=None,width=None):
     # ])
     # xyz = xyz0[np.newaxis,:] + enu.dot(xform)
 
-    dishdiam = np.asarray([2.1]*uv['nants'])
+    dishdiam = np.asarray([2.1] * uv['nants'])
     dishdiam[-3:-1] = 27
     dishdiam[-1] = 2.1
     station = uv['telescop']
@@ -120,7 +123,7 @@ def creatms(idbfile,outpath,timebin=None,width=None):
     sm.setfeed(mode='perfect X Y')
 
     ref_time = me.epoch('tai',
-                        '{:20.13f}'.format(ref_time_jd-2400000.5) + 'd')
+                        '{:20.13f}'.format(ref_time_jd - 2400000.5) + 'd')
 
     sm.settimes(integrationtime='1s',
                 usehourangle=False,
@@ -147,7 +150,7 @@ def creatms(idbfile,outpath,timebin=None,width=None):
                    state_obs_mode='')
 
     if sm.done():
-        print 'Empty MS {0} created in --- {1:10.2f} seconds ---'.format(msname, (time.time() - time0))
+        casalog.post('Empty MS {0} created in --- {1:10.2f} seconds ---'.format(msname, (time.time() - time0)))
     else:
         raise RuntimeError('Failed to create MS. Look at the log file. '
                            'Double check you settings.')
@@ -164,7 +167,6 @@ def creatms(idbfile,outpath,timebin=None,width=None):
 
 
 def importeovsa(idbfiles, timebin=None, width=None, visprefix=None, nocreatms=True, doconcat=False):
-
     casalog.origin('importeovsa')
 
     # # Initialize the helper class
@@ -187,7 +189,6 @@ def importeovsa(idbfiles, timebin=None, width=None, visprefix=None, nocreatms=Tr
     if type(filelist) == str:
         filelist = [filelist]
 
-
     for f in filelist:
         if not os.path.exists(f):
             casalog.post("Some files in filelist are invalid. Aborting...")
@@ -195,14 +196,15 @@ def importeovsa(idbfiles, timebin=None, width=None, visprefix=None, nocreatms=Tr
     if not visprefix:
         visprefix = './'
     if not timebin:
-        timebin='0s'
+        timebin = '0s'
     if not width:
-        width=1
+        width = 1
 
     if nocreatms:
         filename = filelist[0]
         modelms = creatms(filename, visprefix)
 
+    msfile = []
     for filename in filelist:
         uv = aipy.miriad.UV(filename)
         if uv['source'].lower() == 'sun':
@@ -272,7 +274,7 @@ def importeovsa(idbfiles, timebin=None, width=None, visprefix=None, nocreatms=Tr
         sigma = np.ones((4, nrows), dtype=np.float) + 1
         sigma = np.tile(sigma, (1, nband))
 
-        print 'IDB File {0} is readed in --- {1:10.2f} seconds ---'.format(filename, (time.time() - time0))
+        casalog.post('IDB File {0} is readed in --- {1:10.2f} seconds ---'.format(filename, (time.time() - time0)))
 
         msname = list(filename.split('/')[-1])
         msname.insert(11, 'T')
@@ -280,27 +282,27 @@ def importeovsa(idbfiles, timebin=None, width=None, visprefix=None, nocreatms=Tr
 
         if not nocreatms:
             modelms = creatms(filename, visprefix)
-            os.system('mv {} {}'.format(modelms,msname))
+            os.system('mv {} {}'.format(modelms, msname))
         else:
-            print '----------------------------------------'
-            print 'copying standard MS to {0}'.format(msname, (time.time() - time0))
-            print '----------------------------------------'
+            casalog.post('----------------------------------------')
+            casalog.post('copying standard MS to {0}'.format(msname, (time.time() - time0)))
+            casalog.post('----------------------------------------')
             os.system("rm -fr %s" % msname)
             os.system("cp -r " + " %s" % modelms + " %s" % msname)
-            print 'Standard MS is copied to {0} in --- {1:10.2f} seconds ---'.format(msname, (time.time() - time0))
-
+            casalog.post(
+                'Standard MS is copied to {0} in --- {1:10.2f} seconds ---'.format(msname, (time.time() - time0)))
 
         tb.open(msname, nomodify=False)
-        print '----------------------------------------'
-        print "Updating the main table of" '%s' % msname
-        print '----------------------------------------'
+        casalog.post('----------------------------------------')
+        casalog.post("Updating the main table of" '%s' % msname)
+        casalog.post('----------------------------------------')
         for l, bdedge in enumerate(bandedge[:-1]):
             time1 = time.time()
             nchannels = (bandedge[l + 1] - bandedge[l])
             for row in range(nrows):
                 tb.putcell('DATA', (row + l * nrows), out[:, bandedge[l]:bandedge[l + 1], row])
                 tb.putcell('FLAG', (row + l * nrows), flag[:, bandedge[l]:bandedge[l + 1], row])
-            print '---spw {0:02d} is updated in --- {1:10.2f} seconds ---'.format((l + 1), time.time() - time1)
+            casalog.post('---spw {0:02d} is updated in --- {1:10.2f} seconds ---'.format((l + 1), time.time() - time1))
         tb.putcol('UVW', uvwarray)
         tb.putcol('SIGMA', sigma)
         tb.putcol('WEIGHT', 1.0 / sigma ** 2)
@@ -317,9 +319,9 @@ def importeovsa(idbfiles, timebin=None, width=None, visprefix=None, nocreatms=Tr
                 tb.removecols(cols2rm[l])
         tb.close()
 
-        print '----------------------------------------'
-        print "Updating the OBSERVATION table of" '%s' % msname
-        print '----------------------------------------'
+        casalog.post('----------------------------------------')
+        casalog.post("Updating the OBSERVATION table of" '%s' % msname)
+        casalog.post('----------------------------------------')
         tb.open(msname + '/OBSERVATION', nomodify=False)
         tb.putcol('TIME_RANGE',
                   np.asarray([ref_time_mjd - 0.5 * delta_time, ref_time_mjd + end_time - 0.5 * delta_time]).reshape(
@@ -327,9 +329,9 @@ def importeovsa(idbfiles, timebin=None, width=None, visprefix=None, nocreatms=Tr
         tb.putcol('OBSERVER', ['EOVSA team'])
         tb.close()
 
-        print '----------------------------------------'
-        print "Updating the POINTING table of" '%s' % msname
-        print '----------------------------------------'
+        casalog.post('----------------------------------------')
+        casalog.post("Updating the POINTING table of" '%s' % msname)
+        casalog.post('----------------------------------------')
         tb.open(msname + '/POINTING', nomodify=False)
         timearr = np.arange((time_steps), dtype=np.float).reshape(1, time_steps, 1)
         timearr = np.tile(timearr, (nband, 1, nants))
@@ -346,9 +348,9 @@ def importeovsa(idbfiles, timebin=None, width=None, visprefix=None, nocreatms=Tr
         tb.putcol('TARGET', target)
         tb.close()
 
-        print '----------------------------------------'
-        print "Updating the SOURCE table of" '%s' % msname
-        print '----------------------------------------'
+        casalog.post('----------------------------------------')
+        casalog.post("Updating the SOURCE table of" '%s' % msname)
+        casalog.post('----------------------------------------')
         tb.open(msname + '/SOURCE', nomodify=False)
         radec = tb.getcol('DIRECTION')
         radec[0], radec[1] = ra, dec
@@ -357,9 +359,9 @@ def importeovsa(idbfiles, timebin=None, width=None, visprefix=None, nocreatms=Tr
         tb.putcol('NAME', name)
         tb.close()
 
-        print '----------------------------------------'
-        print "Updating the DATA_DESCRIPTION table of" '%s' % msname
-        print '----------------------------------------'
+        casalog.post('----------------------------------------')
+        casalog.post("Updating the DATA_DESCRIPTION table of" '%s' % msname)
+        casalog.post('----------------------------------------')
         tb.open(msname + '/DATA_DESCRIPTION/', nomodify=False)
         pol_id = tb.getcol('POLARIZATION_ID')
         pol_id *= 0
@@ -369,16 +371,16 @@ def importeovsa(idbfiles, timebin=None, width=None, visprefix=None, nocreatms=Tr
         # tb.putcol('SPECTRAL_WINDOW_ID', spw_id)
         tb.close()
 
-        print '----------------------------------------'
-        print "Updating the POLARIZATION table of" '%s' % msname
-        print '----------------------------------------'
+        casalog.post('----------------------------------------')
+        casalog.post("Updating the POLARIZATION table of" '%s' % msname)
+        casalog.post('----------------------------------------')
         tb.open(msname + '/POLARIZATION/', nomodify=False)
         tb.removerows(rownrs=np.arange(1, nband, dtype=int))
         tb.close()
 
-        print '----------------------------------------'
-        print "Updating the FIELD table of" '%s' % msname
-        print '----------------------------------------'
+        casalog.post('----------------------------------------')
+        casalog.post("Updating the FIELD table of" '%s' % msname)
+        casalog.post('----------------------------------------')
         tb.open(msname + '/FIELD/', nomodify=False)
         delay_dir = tb.getcol('DELAY_DIR')
         delay_dir[0], delay_dir[1] = ra, dec
@@ -400,11 +402,16 @@ def importeovsa(idbfiles, timebin=None, width=None, visprefix=None, nocreatms=Tr
         gc.collect()  #
 
         if not (timebin == '0s' and width == 1):
-            split(vis=msname, outputvis=msname+'.split', datacolumn='data', timebin=timebin, width=width)
+            split(vis=msname, outputvis=msname + '.split', datacolumn='data', timebin=timebin, width=width)
             os.system('rm -rf {}'.format(msname))
-        print("finished in --- %s seconds ---" % (time.time() - time0))
+            msfile.append(msname + '.split')
+        else:
+            msfile.append(msname)
+        casalog.post("finished in --- %s seconds ---" % (time.time() - time0))
+
+        if doconcat:
+            concat(vis=msfile, concatvis=msfile[0].replace('-10m.ms', '-{}m.ms'.format(10.0 * len(msfile))))
+            for ll in msfile:
+                os.system('rm -rf {}'.format(ll))
 
         return True
-
-# vis='../eovsa/data/IDB20160531170234'
-# importeovsa(vis, nocreatms=False, doconcat=False)
