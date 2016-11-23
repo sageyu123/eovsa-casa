@@ -1,18 +1,18 @@
 import os
-import sys
+# import sys
 import gc
-import suncasa.utils.jdutil as jdutil
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import scipy.constants as constants
 import time
-import glob
+# import glob
 import aipy
-import eovsapy.chan_util_bc as cu
+import eovsapy.chan_util_bc as chan_util_bc
 import eovsapy.read_idb as ri
 from eovsapy.util import Time
 from taskinit import *
-from parallel.parallel_data_helper import ParallelDataHelper
+from split_cli import split_cli as split
+# from parallel.parallel_data_helper import ParallelDataHelper
 
 def bl_list2(nant=16):
     ''' Returns a two-dimensional array bl2ord that will translate
@@ -35,21 +35,13 @@ def get_band_edge(nband=34):
     idx_start_freq = [0]
     ntmp = 0
     for i in range(1, nband + 1):
-        ntmp += len(cu.start_freq(i))
+        ntmp += len(chan_util_bc.start_freq(i))
         idx_start_freq.append(ntmp)
     return np.asarray(idx_start_freq)
 
 
 def creatms(idbfile,outpath,timebin=None,width=None):
     uv = aipy.miriad.UV(idbfile)
-    if uv['source'].lower() == 'sun':
-        outpath = outpath + 'sun/'
-        if not os.path.exists(outpath):
-            os.mkdir(outpath)
-    else:
-        outpath = outpath + 'calibrator/'
-        if not os.path.exists(outpath):
-            os.mkdir(outpath)
     uv.rewind()
 
     start_time = 0  # The start and stop times are referenced to ref_time_jd in second
@@ -128,7 +120,7 @@ def creatms(idbfile,outpath,timebin=None,width=None):
     sm.setfeed(mode='perfect X Y')
 
     ref_time = me.epoch('tai',
-                        '{:20.13f}'.format(jdutil.jd_to_mjd(ref_time_jd)) + 'd')
+                        '{:20.13f}'.format(ref_time_jd-2400000.5) + 'd')
 
     sm.settimes(integrationtime='1s',
                 usehourangle=False,
@@ -163,15 +155,15 @@ def creatms(idbfile,outpath,timebin=None,width=None):
     modelms = msname + '.MSmodel'
     os.system('mv {} {}'.format(msname, modelms))
 
-    if timebin != '0s' or width != 1:
-        modelms = msname + '.MSmodel'
-        split(vis=msname, outputvis=modelms, datacolumn='data', timebin=timebin, width=width)
-        os.system('rm -rf {}'.format(msname))
+    # if timebin != '0s' or width != 1:
+    #     modelms = msname + '.MSmodel'
+    #     split(vis=msname, outputvis=modelms, datacolumn='data', timebin=timebin, width=width)
+    #     os.system('rm -rf {}'.format(msname))
 
     return modelms
 
 
-def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=False, doconcat=False):
+def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=True):
 
     casalog.origin('importeovsa')
 
@@ -209,7 +201,7 @@ def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=False, do
 
     if nocreatms:
         filename = filelist[0]
-        modelms = creatms(filename, outpath, timebin=timebin, width=width)
+        modelms = creatms(filename, outpath)
 
     for filename in filelist:
         uv = aipy.miriad.UV(filename)
@@ -238,7 +230,7 @@ def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=False, do
         good_idx = np.arange(len(uv['sfreq']))
 
         ref_time_jd = uv['time']
-        ref_time_mjd = jdutil.jd_to_mjd(ref_time_jd) * 24. * 3600. + 0.5 * delta_time
+        ref_time_mjd = (ref_time_jd - 2400000.5) * 24. * 3600. + 0.5 * delta_time
         nf = len(good_idx)
         freq = uv['sfreq'][good_idx]
         npol = uv['npol']
@@ -291,7 +283,7 @@ def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=False, do
         msname = outpath + source_id.upper() + '_' + ''.join(msname[3:]) + '-10m.ms'
 
         if not nocreatms:
-            modelms = creatms(filename, outpath, timebin=timebin, width=width)
+            modelms = creatms(filename, outpath)
             os.system('mv {} {}'.format(modelms,msname))
         else:
             print '----------------------------------------'
@@ -376,9 +368,9 @@ def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=False, do
         pol_id = tb.getcol('POLARIZATION_ID')
         pol_id *= 0
         tb.putcol('POLARIZATION_ID', pol_id)
-        spw_id = tb.getcol('SPECTRAL_WINDOW_ID')
-        spw_id *= 0
-        tb.putcol('SPECTRAL_WINDOW_ID', spw_id)
+        # spw_id = tb.getcol('SPECTRAL_WINDOW_ID')
+        # spw_id *= 0
+        # tb.putcol('SPECTRAL_WINDOW_ID', spw_id)
         tb.close()
 
         print '----------------------------------------'
@@ -411,6 +403,9 @@ def importeovsa(vis, timebin=None, width=None, outpath=None, nocreatms=False, do
         del out, flag, uvwarray, uv, timearr, sigma
         gc.collect()  #
 
+        if not (timebin == '0s' and width == 1):
+            split(vis=msname, outputvis=msname+'.split', datacolumn='data', timebin=timebin, width=width)
+            os.system('rm -rf {}'.format(msname))
         print("finished in --- %s seconds ---" % (time.time() - time0))
 
         return True

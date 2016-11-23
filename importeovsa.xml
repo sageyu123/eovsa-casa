@@ -21,8 +21,8 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
             <!-- SELECTION parameters -->
             <param type="bool" name="nocreatms">
-                <description>If copying a new MS file instead of create one from MS simulator.</description>
-                <value>False</value>
+                <description>If copying a new MS file instead of create one from MS simulator since the second file in filelist.</description>
+                <value>True</value>
             </param>
 
             <param type="string" name="outpath">
